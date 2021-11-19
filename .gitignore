@@ -8,6 +8,7 @@ __pycache__/
 
 #self added
 data/*
+draft.py
 
 # Distribution / packaging
 .Python

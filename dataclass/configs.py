@@ -31,6 +31,20 @@ class BaseDataClass:
 
     def _get_choices(self, attr_name):
         return self._get_meta(attr_name, "choices")
+    
+    @classmethod
+    def from_namespace(cls,args):
+        if isinstance(args,cls):
+            return args
+        else:
+            config = cls()
+            for key in config.__dataclass_fields__.keys():
+                if key.startswith('_'):
+                    continue
+                if hasattr(args,key):
+                    setattr(config,key,getattr(args,key))
+            
+            return config
 
 @dataclass
 class Setup(BaseDataClass):
@@ -45,3 +59,22 @@ class Config(BaseDataClass):
 
 
 #%%
+class A:
+    def __init__(self,x,y):
+        self.x = x
+        self.y = y
+    
+    def add(self):
+        return self.x + self.y
+    
+    @classmethod
+    def d(cls):
+        print(cls)
+    
+class B(A):
+    @classmethod
+    def de(cls):
+        print(cls)
+
+a = B(1,2)
+a.d()
