@@ -1,6 +1,10 @@
+import sys
+sys.path.append('.')
+
 import ast
 import argparse
 import inspect
+import os
 from enum import Enum
 from typing import List,Optional
 from omegaconf import OmegaConf,_utils
@@ -139,17 +143,16 @@ class omegaconf_no_object_check:
 
 def convert_namespace_to_omegaconf(args):
     overrides,deletes = override_module_args(args)
-    config_path = 'dataclass'
+    config_path = os.path.join('../','config')
 
     GlobalHydra.instance().clear()
     
     with initialize(config_path=config_path):
         try:
-            composed_cfg = compose('config.yaml',overrides=overrides)
+            composed_cfg = compose('config',overrides=overrides,strict=False)
         except:
             logger.error("Error when composing. Overrides: " + str(overrides))
             raise
-        
         
         for k in deletes:
             composed_cfg[k] = None
@@ -166,8 +169,9 @@ def convert_namespace_to_omegaconf(args):
     
     return cfg
 
-#parser = get_parser()
-#args,_ = parse_args_and_arch(parser)
-#cfg = convert_namespace_to_omegaconf(args)
-
+parser = get_parser()
+args,_ = parse_args_and_arch(parser)
+cfg = convert_namespace_to_omegaconf(args)
+print(cfg)
 #%%
+

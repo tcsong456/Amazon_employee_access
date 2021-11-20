@@ -6,7 +6,8 @@ class LR:
     def __init__(self,args):
         model = LogisticRegression(penalty=args.penalty,
                                    C=args.c,
-                                   max_iter=args.iter)
+                                   max_iter=args.iter,
+                                   multi_class=args.multi_class)
         self.model = model
     
     @staticmethod
@@ -23,6 +24,10 @@ class LR:
                             is the multinomial loss fit across the entire probability distribution, even when the data is binary. ‘multinomial’ is \
                             unavailable when solver=’liblinear’. ‘auto’ selects ‘ovr’ if the data is binary, or if solver=’liblinear’, and otherwise \
                             selects ‘multinomial’")
+    
+    @classmethod
+    def build_model(cls,args):
+        return cls(args)
     
     def fit(self,X,y):
         self.model.fit(X,y)
