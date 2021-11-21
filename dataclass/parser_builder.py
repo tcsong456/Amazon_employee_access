@@ -19,6 +19,9 @@ from dataclass.utils_dataclass import gen_parser_from_dataclass,interpret_dc_typ
 def get_parser():
     parser = argparse.ArgumentParser()
     gen_parser_from_dataclass(parser,Setup())
+    
+    from tasks import TASK_REGISTRY
+    parser.add_argument('--task',choices=TASK_REGISTRY.keys(),help='task to implement')
     return parser
 
 def parse_args_and_arch(parser,
@@ -34,8 +37,8 @@ def parse_args_and_arch(parser,
             raise RuntimeError()
         
     if hasattr(args,'task'):
-        from tasks import TaskRegistry
-        TaskRegistry[args.task].add_args(parser)
+        from tasks import TASK_REGISTRY
+        TASK_REGISTRY[args.task].add_args(parser)
     
     if parse_known:
         args,extra = parser.parse_known_args(input_args)
@@ -96,6 +99,13 @@ def _override_attr(sub_node,
     
     return overrides
 
+def migrate_registry(name,value,registry,overrides,deletes,args):
+    if value in registry:
+        overrides.append('{}={}'.format(name,value))
+        overrides.extend(_override_attr(name,registry[value],args))
+    else:
+        deletes.append(name)
+
 def override_module_args(args):
     overrides,deletes = [],[]
     
@@ -111,6 +121,12 @@ def override_module_args(args):
             overrides.append('model={}'.format(args.arch))
             overrides.extend(_override_attr('model',dc,args))
             no_dc = False
+    
+    if hasattr(args,'task'):
+        from tasks import TASK_DATACLASS_REGISTRY
+        migrate_registry('task',args.task,TASK_DATACLASS_REGISTRY,overrides,deletes,args)
+    else:
+        deletes.append('task')
     
     if no_dc:
         deletes.append('model')
@@ -143,7 +159,6 @@ class omegaconf_no_object_check:
 def convert_namespace_to_omegaconf(args):
     overrides,deletes = override_module_args(args)
     config_path = os.path.join('../','config')
-
     GlobalHydra.instance().clear()
     
     with initialize(config_path=config_path):
@@ -157,12 +172,17 @@ def convert_namespace_to_omegaconf(args):
             composed_cfg[k] = None
     
     cfg = OmegaConf.create(OmegaConf.to_container(composed_cfg,resolve=True,enum_to_str=True))
-    
+
     with omegaconf_no_object_check():
         if cfg.model is None and getattr(args,'arch',None):
             cfg.model = Namespace(**vars(args)) 
             from models import ARCH_MODEL_REGISTRY
             _set_legacy_defaults(cfg.model,ARCH_MODEL_REGISTRY[args.arch])
+
+        if cfg.task is None and getattr(args,'task',None):
+            cfg.task = Namespace(*vars(args))
+            from tasks import TASK_REGISTRY
+            _set_legacy_defaults(cfg.task,TASK_REGISTRY[args.task])
     
     OmegaConf.set_struct(cfg, True)
     

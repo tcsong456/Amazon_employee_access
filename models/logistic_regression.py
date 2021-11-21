@@ -6,7 +6,7 @@ class LR:
     def __init__(self,args):
         model = LogisticRegression(penalty=args.penalty,
                                    C=args.c,
-                                   max_iter=args.iter,
+                                   max_iter=args.max_iter,
                                    multi_class=args.multi_class)
         self.model = model
     
@@ -35,13 +35,16 @@ class LR:
     
     def predict(self,X):
         return self.model.predict_proba(X)[:,1]
+    
+    def get_params(self):
+        return self.model.get_params()
 
 @register_model_architecture('logistic_regression','logistic_regression_gs')
 def greedylr(args):
-    args.penalty = getattr(args,'penalty','l1')
-    args.c = getattr(args,'c',1.0)
-    args.max_iter = getattr(args,'max_iter',100)
-    args.multi_class = getattr(args,'multi_class','auto')
+    args.penalty = args.penalty if args.penalty is not None else 'l2'
+    args.c = args.c if args.c is not None else 1.0
+    args.max_iter = args.max_iter if args.max_iter is not None else 100
+    args.multi_class = args.multi_class if args.multi_class is not None else 'auto'
         
 
 #%%

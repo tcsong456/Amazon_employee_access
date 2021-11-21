@@ -1,7 +1,22 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Nov 21 12:45:24 2021
+from models import build_model
+from dataclass.utils_dataclass import gen_parser_from_dataclass
 
-@author: congx
-"""
+class BaseTask:
+    @classmethod
+    def setup_task(cls,cfg,**kwargs):
+        return cls(cfg,**kwargs)
+    
+    @classmethod
+    def add_args(cls,parser):
+        dc = getattr(cls,'__dataclass')
+        if dc is not None:
+            gen_parser_from_dataclass(parser,dc())
+    
+    def build_model(self,cfg):
+        model = build_model(cfg)
+        return model
 
+
+
+
+#%%

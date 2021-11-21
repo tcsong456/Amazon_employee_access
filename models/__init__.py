@@ -26,7 +26,7 @@ def build_model(cfg):
         if model_type in ARCH_CONFIG_REGISTRY:
             with open_dict(cfg) if OmegaConf.is_config(cfg) else ExitStack():
                 ARCH_CONFIG_REGISTRY[model_type](cfg)
-    
+
     assert model is not None, (
         f"Could not infer model type from {cfg}. "
         "Available models: {}".format(
@@ -35,7 +35,7 @@ def build_model(cfg):
         + f" Requested model type: {model_type}"
     )
         
-    return model
+    return model(cfg)
                 
 def register_model(name,dataclass=None):
     def register_model_cls(cls):

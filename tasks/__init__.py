@@ -9,10 +9,9 @@ TASK_DATACLASS_REGISTRY = {}
 def setup_task(cfg,**kwargs):
     task_name = getattr(cfg,'task')
     task_name in TASK_REGISTRY,'{} is not registered'.format(task_name)
-    
     task = TASK_REGISTRY[task_name]
     if task_name in TASK_CLASS_NAMES:
-        dc = TASK_CLASS_NAMES[task_name]
+        dc = TASK_DATACLASS_REGISTRY[task_name]
         cfg = dc.from_namespace(cfg)
     
     assert (

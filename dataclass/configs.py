@@ -51,13 +51,13 @@ class BaseDataClass:
 class Setup(BaseDataClass):
     stacking: bool = field(default=False,metadata={'help':'if use stacking to produce output'})
     stacking_splits: int = field(default=5,metadata={'help':'num of splits used for stacking'})
-    task: str = field(default='greedy search',metadata={'help':'greedy search for best features'})
-    arch: str = field(default='logistic_regression',metadata={'help':'archtechure used to implement the task'})
+    arch: str = field(default='logistic_regression_gs',metadata={'help':'archtechure used to implement the task'})
 
 @dataclass
 class Config(BaseDataClass):
     setup: Setup = Setup()
     model: Any = None
+    task: Any = None
 
 
 

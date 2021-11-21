@@ -18,6 +18,9 @@ def load_data(path):
     train = os.path.join(path,'train.csv')
     test = os.path.join(path,'test.csv')
     
+    train = pd.read_csv(train)
+    test = pd.read_csv(test)
+    
     train = np.array(train)
     test = np.array(test)
     

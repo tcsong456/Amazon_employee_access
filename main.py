@@ -1,6 +1,7 @@
 import warnings
 warnings.filterwarnings(action='ignore')
 import tasks
+import models
 from helper.utils import load_data
 from dataclass.parser_builder import convert_namespace_to_omegaconf,get_parser,parse_args_and_arch
 
@@ -11,13 +12,10 @@ def main():
     
     train,test = load_data('data')
     
-    task = tasks.setup_task(cfg,train=train,test=test)
-    x_tr,x_te = task.create_features()
+    model = models.build_model(cfg.model)
+    task = tasks.setup_task(cfg.task,train=train,test=test,model=model,arch=cfg.setup.arch)
     
-    import pickle
-    with open('x_tr.pkl','wb') as xtr,open('x_te.pkl','wb') as xte:
-        pickle.dump(x_tr,xtr)
-        pickle.dump(x_te,xte)
+    x = task.create_features()
     
 if __name__ == '__main__':
     main()
@@ -26,3 +24,10 @@ if __name__ == '__main__':
 
 
 #%%
+#import pickle
+#with open('x_tr.pkl','rb') as xtr,open('x_te.pkl','rb') as xte:
+#    xtr = pickle.load(xtr)
+#    xte = pickle.load(xte)
+#x = xtr[:,[12]]
+#z = set(list(x.T[0]))
+#dict((k,i) for i,k in enumerate(z))
