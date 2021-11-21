@@ -1,5 +1,8 @@
 import logzero
 import logging
+import os
+import pandas as pd
+import numpy as np
 
 def custome_logger(name):
     formatter = logging.Formatter(fmt='%(asctime)s - %(message)s',
@@ -11,6 +14,14 @@ def custome_logger(name):
 
 logger = custome_logger('amazon')
 
-
+def load_data(path):
+    train = os.path.join(path,'train.csv')
+    test = os.path.join(path,'test.csv')
+    
+    train = np.array(train)
+    test = np.array(test)
+    
+    return train,test
 
 #%%
+

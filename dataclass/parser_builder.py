@@ -27,16 +27,15 @@ def parse_args_and_arch(parser,
     from models import ARCH_MODEL_REGISTRY 
     
     args,_ = parser.parse_known_args(input_args)
-    
     if hasattr(args,'arch'):
         if args.arch in ARCH_MODEL_REGISTRY:
             ARCH_MODEL_REGISTRY[args.arch].add_args(parser)
         else:
             raise RuntimeError()
         
-#    if hasattr(args,'task'):
-#        from tasks import TaskRegistry
-#        TaskRegistry[args.task].add_args(parser)
+    if hasattr(args,'task'):
+        from tasks import TaskRegistry
+        TaskRegistry[args.task].add_args(parser)
     
     if parse_known:
         args,extra = parser.parse_known_args(input_args)
@@ -61,7 +60,7 @@ def _override_attr(sub_node,
     for k,v in data_class.__dataclass_fields__.items():
         if k.startswith('_'):
             continue
-        
+
         val = get_default(v) if not hasattr(args,k) else getattr(args,k)
         
         field_type = interpret_dc_type(v.type)
@@ -169,9 +168,6 @@ def convert_namespace_to_omegaconf(args):
     
     return cfg
 
-parser = get_parser()
-args,_ = parse_args_and_arch(parser)
-cfg = convert_namespace_to_omegaconf(args)
-print(cfg)
+
 #%%
 

@@ -36,7 +36,7 @@ class LR:
     def predict(self,X):
         return self.model.predict_proba(X)[:,1]
 
-@register_model_architecture('logistic_regression','logistic_regression')
+@register_model_architecture('logistic_regression','logistic_regression_gs')
 def greedylr(args):
     args.penalty = getattr(args,'penalty','l1')
     args.c = getattr(args,'c',1.0)

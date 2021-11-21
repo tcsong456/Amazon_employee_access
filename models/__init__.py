@@ -2,6 +2,7 @@ import os
 import importlib
 from contextlib import ExitStack
 from omegaconf import open_dict,OmegaConf
+from hydra.core.config_store import ConfigStore
 
 MODEL_REGISTRY = {}
 MODEL_DATACLASS_REGISTRY = {}
@@ -45,7 +46,12 @@ def register_model(name,dataclass=None):
         cls.__dataclass = dataclass
         if dataclass is not None:
             MODEL_DATACLASS_REGISTRY[name] = dataclass
-        
+            
+            cs = ConfigStore()
+            dataclass.__name = name
+            node = dataclass()
+            cs.store(name=name,node=node,group='model',provider='tcsong')
+            
         return cls
     
     return register_model_cls
