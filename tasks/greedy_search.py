@@ -1,5 +1,6 @@
 import numpy as np
 import pickle
+import os
 from itertools import combinations
 from dataclasses import dataclass,field
 from dataclass.configs import BaseDataClass
@@ -8,7 +9,7 @@ from tasks.base_task import BaseTask
 from scipy import sparse
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
-from helper.utils import logger
+from helper.utils import logger,compress_datatype
 
 def comb_data(data,num):
     rows,cols = data.shape
@@ -48,9 +49,11 @@ def cv_search(x,y,model,n=10,seed=555):
 @dataclass
 class GreedySearchConfig(BaseDataClass):
     cv_splits: int = field(default=10,metadata={'help':'number of splits for cv search'})
-    min_good_features: int = field(default=4,metadata={'help':'number of tries to find good features'})
+    num_of_tries: int = field(default=4,metadata={'help':'number of tries to find good features'})
     seed: int = field(default=1058,metadata={'help':'seed for shuffling data into train test split'})
     task: str = field(default='greedy_search')
+    instant_remove: bool = field(default=False,metadata={'help':'if item is removed instantly during search'})
+    trail_feat_len: int = field(default=-1,metadata={'help':'fast way to test code feasibility'})
 
 @register_task('greedy_search',dataclass=GreedySearchConfig)
 class GreedySearch(BaseTask):
@@ -66,7 +69,22 @@ class GreedySearch(BaseTask):
         self.test = test
         self.model = model
         self.arch = arch
-
+        
+    def save_data(self,X_tr,X_te,good_feature_list,i):
+        X_train = X_tr[:,good_feature_list]
+        X_test = X_te[:,good_feature_list]
+        suffix = str(i + 1)
+        if not os.path.exists('interim_data_store'):
+            os.mkdir('interim_data_store')
+        
+        X_train = compress_datatype(X_train)
+        X_test = compress_datatype(X_test)
+        
+        str_suffix = 'remove' if self.args.instant_remove else ''
+        with open(f'interim_data_store/greedy{suffix}{str_suffix}.pkl','wb') as f:
+            pickle.dump((X_train,X_test,good_feature_list),f)
+            logger.info(f"successfully saved greedy{suffix}{str_suffix}")
+    
     def create_features(self):
         all_data = np.vstack([self.train[:,1:-1],self.test[:,1:-1]])
         train_rows = self.train.shape[0]
@@ -88,38 +106,40 @@ class GreedySearch(BaseTask):
         num_features = X_tr.shape[1]
         Xts = [convert_to_sparsematrix(X_tr[:,[i]]) for i in range(num_features)]
         
-        i = 0
-        score_list = []
-        good_feature_list = []
-        
-        while len(score_list) < self.args.min_good_features or (score_list[-1] > score_list[-2]):
-            good_features = []
-            scores = []
-            for f in range(len(Xts)):
-                if f not in good_features:
-                    good_features.append(f)
-                    X = sparse.hstack([Xts[j] for j in good_features])
+        for i in range(self.args.num_of_tries):
+            score_list = []
+            good_feature_list = []
+            first_cols = len(Xts) + 1 if self.args.trail_feat_len == -1 else self.args.trail_feat_len
+            if not self.args.instant_remove:
+                for f in range(len(Xts[:first_cols])):
+                    good_feature_list.append(f)
+                    good_features = good_feature_list.copy()
+                    X = sparse.hstack([Xts[j] for j in good_feature_list])
                     score = cv_search(X,y,self.model,self.args.cv_splits,self.args.seed*(i+1))
-                    logger.info('current features:{} with auc_score:{:.5f}'.format(good_features,score))
-                    scores.append((score,f))
-            good_feature_list.append(sorted(scores)[-1][1])
-            score_list.append(sorted(scores)[-1][0])
-        
-        good_feature_list = good_feature_list[:-1]
-        good_feature_list = list(sorted(good_feature_list))
-        logger.info(f'arch:{self.arch} round:{i} best features:{good_feature_list}')
-    
-        X_train = X_tr[:,good_feature_list]
-        X_test = X_te[:,good_feature_list]
-        suffix = str(i + 1) if i else ''
-        with open(f'greedy{suffix}.pkl','wb') as f:
-            pickle.dump((X_train,X_test),f)
-            logger.info(f'successfully saved greed{suffix}')
-        i += 1
-        
+                    logger.info('current num of features:{} with auc_score:{:.5f}'.format(len(good_feature_list),score))
+                    score_list.append((score,good_features))
+                good_feature_list = sorted(score_list,key=lambda x:x[0])[-1][1]
+                score_list.append(sorted(score_list,key=lambda x:x[0])[-1][0])
+                self.save_data(X_tr,X_te,good_feature_list,i) 
+            else:
+                best_score = 0
+                for f in range(len(Xts[:first_cols])):
+                    good_feature_list.append(f)
+                    X = sparse.hstack([Xts[j] for j in good_feature_list])
+                    score = cv_search(X,y,self.model,self.args.cv_splits,self.args.seed*(i+1))
+                    if score <= best_score:
+                        good_feature_list = good_feature_list[:-1]
+                    else:
+                        best_score = score
+                    logger.info(f'current best feature:{good_feature_list} with score:{score:.5f}')
+                self.save_data(X_tr,X_te,good_feature_list,i)
+                
+            logger.info(f'arch:{self.arch} round:{i} best features:{good_feature_list}')     
+                
         return Xts
         
     
 #%%
 
-#'{:.5f}'.format(2.12313123)
+
+    

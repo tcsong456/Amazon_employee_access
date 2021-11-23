@@ -52,6 +52,7 @@ class Setup(BaseDataClass):
     stacking: bool = field(default=False,metadata={'help':'if use stacking to produce output'})
     stacking_splits: int = field(default=5,metadata={'help':'num of splits used for stacking'})
     arch: str = field(default='logistic_regression_gs',metadata={'help':'archtechure used to implement the task'})
+    use_numpy: bool = field(default=False,metadata={'help':'wether to use numpy data or not'})
 
 @dataclass
 class Config(BaseDataClass):
