@@ -20,7 +20,8 @@ class BaseFeature(BaseTask):
                  train,
                  test,
                  model,
-                 arch):
+                 arch,
+                 **kwargs):
         self.train = train
         self.test = test
         self.X_all = pd.concat([self.train.iloc[:,1:-1],self.test.iloc[:,1:-1]])

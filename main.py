@@ -1,7 +1,10 @@
 import warnings
 warnings.filterwarnings(action='ignore')
 import tasks
+import os
+import pickle
 import models
+import numpy as np
 from helper.utils import load_data
 from dataclass.parser_builder import convert_namespace_to_omegaconf,get_parser,parse_args_and_arch
 
@@ -15,8 +18,19 @@ def main():
     else:
         train,test = load_data('data')
     
+    orig_dir = 'interim_data_store'
+    pivot_dict = {}
+    pivot_keys = ['pivottable','pivottable_test','pivottable_train']
+    for file in os.listdir(orig_dir):
+        if 'pivottable' in file:
+            dc = pickle.load(open(os.path.join(orig_dir,file),'rb'))
+            pivot_dict[file[:file.find('.pkl')]] = dc
+    check_bool = [(k in pivot_keys) for k in pivot_dict]
+    assert np.all(check_bool),f'pivot dictionary must contain all keys in {pivot_keys}'
+    
     model = models.build_model(cfg.model)
-    task = tasks.setup_task(cfg.task,train=train,test=test,model=model,arch=cfg.setup.arch)
+    task = tasks.setup_task(cfg.task,train=train,test=test,model=model,arch=cfg.setup.arch,
+                            **pivot_dict)
     
     task.create_features()
     
@@ -28,5 +42,18 @@ if __name__ == '__main__':
 
 #%%
 #import pickle
+#import os
+#import numpy as np
+#import pandas as pd
 #with open('interim_data_store/pivottable.pkl','rb') as f:
 #    d = pickle.load(f)
+#for file in os.listdir('interim_data_store'):
+#    if
+#s = {'p':1,'pt':2,'ptt':3}
+#list(s.keys()) == ['p','ptt','pt']
+
+with open('interim_data_store/base_data.pkl','rb') as f:
+    z = pickle.load(f)
+    metadata = z[0]
+#train = pd.read_csv('data/train.csv')
+#%%

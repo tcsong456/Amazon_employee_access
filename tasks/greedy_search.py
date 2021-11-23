@@ -62,8 +62,8 @@ class GreedySearch(BaseTask):
                  train,
                  test,
                  model,
-                 arch
-                 ):
+                 arch,
+                 **kwargs):
         self.args = args
         self.train = train
         self.test = test
