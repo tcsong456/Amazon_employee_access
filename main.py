@@ -41,19 +41,3 @@ if __name__ == '__main__':
 
 
 #%%
-#import pickle
-#import os
-#import numpy as np
-#import pandas as pd
-#with open('interim_data_store/pivottable.pkl','rb') as f:
-#    d = pickle.load(f)
-#for file in os.listdir('interim_data_store'):
-#    if
-#s = {'p':1,'pt':2,'ptt':3}
-#list(s.keys()) == ['p','ptt','pt']
-
-with open('interim_data_store/base_data.pkl','rb') as f:
-    z = pickle.load(f)
-    metadata = z[0]
-#train = pd.read_csv('data/train.csv')
-#%%
