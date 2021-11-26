@@ -13,12 +13,12 @@ ARCH_CONFIG_REGISTRY = {}
 def build_model(cfg):
     model = None
     model_type = getattr(cfg,'arch')
-    
+    print(MODEL_REGISTRY,ARCH_MODEL_REGISTRY)
     if model_type in ARCH_MODEL_REGISTRY:
         model = ARCH_MODEL_REGISTRY[model_type]
     elif model_type in MODEL_DATACLASS_REGISTRY:
         model = MODEL_REGISTRY[model_type]
-    
+
     if model_type in MODEL_DATACLASS_REGISTRY:
         dc = MODEL_DATACLASS_REGISTRY[model_type]
         dc.from_namspace(cfg)

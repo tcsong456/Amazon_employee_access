@@ -48,7 +48,7 @@ def gen_parser_from_dataclass(
         inner_type = interpret_dc_type(field_type)
         field_default = dataclass._get_default(k)
         
-        if isinstance(inner_type,type) and isinstance(inner_type,Enum):
+        if isinstance(inner_type,type) and issubclass(inner_type,Enum):
             field_choices = [t.value for t in list(inner_type)]
         else:
             field_choices = None
@@ -58,6 +58,8 @@ def gen_parser_from_dataclass(
         
         if isinstance(field_default,str):
             kwargs['default'] = field_default
+            if field_choices is not None:
+                kwargs['choices'] = field_choices
         else:
             if field_default is MISSING:
                 kwargs['required'] = True
@@ -102,7 +104,7 @@ def gen_parser_from_dataclass(
         alias = dataclass_instance._get_argparse_alias(k)
         if alias is not None:
             field_args.append(alias)
-        
+
         try:
             parser.add_argument(*field_args,**kwargs)
         except ArgumentError:

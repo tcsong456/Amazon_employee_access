@@ -1,5 +1,4 @@
-stacking: null
-stacking_splits: null
-task: null
 arch: null
 use_numpy: null
+mode: null
+pattern: null

@@ -1,5 +1,6 @@
-from typing import List,Any
+from typing import Any,Optional
 from dataclasses import dataclass,field,_MISSING_TYPE
+from dataclass.choices import SETUP_MODE_CHOICES,RNNING_PATTERN
 
 @dataclass
 class BaseDataClass:
@@ -49,10 +50,10 @@ class BaseDataClass:
 
 @dataclass
 class Setup(BaseDataClass):
-    stacking: bool = field(default=False,metadata={'help':'if use stacking to produce output'})
-    stacking_splits: int = field(default=5,metadata={'help':'num of splits used for stacking'})
     arch: str = field(default='logistic_regression_gs',metadata={'help':'archtechure used to implement the task'})
     use_numpy: bool = field(default=False,metadata={'help':'wether to use numpy data or not'})
+    mode: Optional[SETUP_MODE_CHOICES]  = field(default='build_task',metadata={'help':'mode to run in main function'})
+    pattern: Optional[RNNING_PATTERN] = field(default='evaluate',metadata={'help':'evalutate data or submit final results'})
 
 @dataclass
 class Config(BaseDataClass):

@@ -62,7 +62,7 @@ def load_data(path,convert_to_numpy=False):
     
     return train,test
 
-def save_data(X,X_te,filename,feat=None,feat_te=None):
+def save_data(X,X_te,filename,suffix_path=None,feat=None,feat_te=None):
     if feat is not None:
         assert feat.shape[1] == feat_te.shape[1]
         assert feat is not None and feat_te is not None
@@ -76,26 +76,30 @@ def save_data(X,X_te,filename,feat=None,feat_te=None):
             X = np.hstack([X,feat])
             X_te = np.hstack([X_te,feat_te])
     
-    save_path = 'interim_data_store/model_features'
+    save_path = 'interim_data_store/model_features' if suffix_path is None else f'interim_data_store/model_features/{suffix_path}'
     if not os.path.exists(save_path):
         os.makedirs(save_path)
     p = os.path.join(save_path,f'{filename}.pkl')
     with open(p,'wb') as f:
         pickle.dump((X,X_te),f)
 
-def get_dataset(fset,train,cv):
+def get_dataset(fset,path_suffix=None,train=None,cv=None):
     from scipy import sparse
-    with open(f'interim_data_store/model_features/{fset}.pkl','rb') as f:
+    
+    load_path = f'interim_data_store/model_features/{fset}.pkl' if path_suffix is None \
+                else f'interim_data_store/model_features/{path_suffix}/{fset}.pkl'
+    with open(load_path,'rb') as f:
         X_tr,X_te = pickle.load(f)
-    
-    dim = X_tr.shape[1]
-    if sparse.issparse(X_tr):
-        X_tr = sparse.hstack([X_tr,X_tr]).tocsr()[train,:dim]
-        X_te = sparse.hstack([X_te,X_te]).tocsr()[cv,:dim]
-    else:
-        X_tr = X_tr[train]
-        X_te = X_tr[cv]
-    
+        
+    if train is not None and cv is not None:
+        dim = X_tr.shape[1]
+        if sparse.issparse(X_tr):
+            X_te = sparse.hstack([X_tr,X_tr]).tocsr()[cv,:dim]
+            X_tr = sparse.hstack([X_tr,X_tr]).tocsr()[train,:dim]
+        else:
+            X_te = X_tr[cv]
+            X_tr = X_tr[train]
+            
     return X_tr,X_te
     
 

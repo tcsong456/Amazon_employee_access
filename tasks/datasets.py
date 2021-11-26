@@ -103,8 +103,12 @@ class BuildDataset(BaseTask):
         self.test = test[:,1:-1]
         self.arch = arch
         self.mother_path = 'interim_data_sotre/model_features'
+        self.lr_path = os.path.join(self.mother_path,'logisitc_regression')
+        if not os.path.exists(self.lr_path):
+            os.makedirs(self.lr_path)
         
         self.DATASETS = ['greedy1remove','greedy2remove','greedy3remove','greedy4remove']
+        
     
     def load_data(self,ds):
         with open(f'interim_data_store/{ds}.pkl','rb') as f:
@@ -133,17 +137,17 @@ class BuildDataset(BaseTask):
         tripple_tr,tripple_te = self.load_data('tripple')
 
         X_tup,X_tup_te = sparcify(tuple_tr,tuple_te)
-        save_data(X_tup,X_tup_te,'lr_tuple')
+        save_data(X_tup,X_tup_te,'lr_tuple','logisitc_regression')
         
         X_trp,X_trp_te = sparcify(tripple_tr,tripple_te)
-        save_data(X_trp,X_trp_te,'lr_tripple')
+        save_data(X_trp,X_trp_te,'lr_tripple','logisitc_regression')
         
-        save_data(X_tup,X_tup_te,'lr_tuple_tripple',X_trp,X_trp_te)
+        save_data(X_tup,X_tup_te,'lr_tuple_tripple','logisitc_regression',X_trp,X_trp_te)
         
         tree_cd_tr = process(treefeats_tr,create_divs=True)
         tree_cd_te = process(treefeats_te,create_divs=True)
         tree_cd_tr,tree_cd_te = check_var(tree_cd_tr,tree_cd_te)
-        save_data(tree_cd_tr,tree_cd_te,'tree_div')
+        save_data(tree_cd_tr,tree_cd_te,'tree_div',)
         
         tree_log_tr = process(treefeats_tr,log_transform=True)
         tree_log_te = process(treefeats_te,log_transform=True)
@@ -166,9 +170,9 @@ class BuildDataset(BaseTask):
             
             if 'greedy' in ds:
                 X,X_te = sparcify(X,X_te)
-                save_data(X,X_te,f'lr_gr{i}')
-                save_data(X,X_te,f'lr_gr{i}tuple',X_tup,X_tup_te)
-                save_data(X,X_te,f'lr_gr{i}tripple',X_trp,X_trp_te)
+                save_data(X,X_te,f'lr_gr{i}','logistitc_regression')
+                save_data(X,X_te,f'lr_gr{i}tuple','logistitc_regression',X_tup,X_tup_te)
+                save_data(X,X_te,f'lr_gr{i}tripple','logistitc_regression',X_trp,X_trp_te)
             
                 
 

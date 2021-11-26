@@ -45,6 +45,14 @@ def greedylr(args):
     args.c = args.c if args.c is not None else 1.0
     args.max_iter = args.max_iter if args.max_iter is not None else 100
     args.multi_class = args.multi_class if args.multi_class is not None else 'auto'
-        
+    return args
+    
+@register_model_architecture('logistic_regression','lr_normal')
+def lr_run(args):
+    args.penalty = args.penalty if hasattr(args,'penalty') else 'l2'
+    args.c = args.c if hasattr(args,'c') else 1.0
+    args.max_iter = args.max_iter if hasattr(args,'max_iter') else 100
+    args.multi_class = args.multi_class if hasattr(args,'multi_class') else 'auto'      
+    return args
 
 #%%
