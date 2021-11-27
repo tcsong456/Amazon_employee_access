@@ -75,6 +75,8 @@ def save_data(X,X_te,filename,suffix_path=None,feat=None,feat_te=None):
         else:
             X = np.hstack([X,feat])
             X_te = np.hstack([X_te,feat_te])
+            X = compress_datatype(X)
+            X_te = compress_datatype(X_te)
     
     save_path = 'interim_data_store/model_features' if suffix_path is None else f'interim_data_store/model_features/{suffix_path}'
     if not os.path.exists(save_path):
@@ -101,7 +103,31 @@ def get_dataset(fset,path_suffix=None,train=None,cv=None):
             X_tr = X_tr[train]
             
     return X_tr,X_te
+
+def check_var(dtr,dte):
+    train_rows = dtr.shape[0]
     
+    data = np.vstack([dtr,dte]) if isinstance(dtr,np.ndarray) \
+           else pd.concat([dtr,dte])
+           
+    dim = data.shape[1]
+    cols = []
+    if isinstance(data,pd.DataFrame):
+        for col in range(dim):
+            if len(data.iloc[:,col].unique()) > 1:
+                cols.append(col)
+        data = data.iloc[:,cols]
+        data_tr,data_te = data.iloc[:train_rows],data.iloc[train_rows:]
+    elif isinstance(data,np.ndarray):
+        for col in range(dim):
+            if len(np.unique(data[:,col])) > 1:
+                cols.append(col)
+        data = data[:,cols]
+        data_tr,data_te = data[:train_rows],data[train_rows:]
+    else:
+        raise ValueError(f'{type(data)} is not supported')
+        
+    return data_tr,data_te
+            
 
 #%%
-

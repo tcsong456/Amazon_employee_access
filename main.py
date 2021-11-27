@@ -44,15 +44,30 @@ def main():
                                 **pivot_dict)
         task.create_features()
     else:
-        selected_models = ['lr-lr_gr0','lr-lr_gr0tripple','lr-lr_gr0tuple','lr-lr_gr1','lr-lr_gr1tripple',
-                           'lr-lr_gr1tuple','lr-lr_gr2','lr-lr_gr2tripple','lr-lr_gr2tuple','lr-lr_gr3',
-                           'lr-lr_gr3tripple','lr-lr_gr3tuple','lr-lr_tuple','lr-lr_tripple','lr-lr_tuple_tripple']
+        selected_models = [
+                           'lgb-lgb_baseextrbs','lgb-lgb_bsbatrlmelex','lgb-lgb_exbasic','lgb-lgb_trbsme',
+                           'lgb-lgb_base_basic','rf-rf_babsme','rf-rf_base','rf-rf_trmelba',
+                           'lr-lr_gr0base','lr-lr_gr1base','lr-lr_gr0tuple','lr-lr_gr1tuple_base']
         models_ds = []
+        
         lr_args = Namespace(architecture='lr_normal') 
         lr_args = models.ARCH_CONFIG_REGISTRY[lr_args.architecture](lr_args)
         lr_model = models.ARCH_MODEL_REGISTRY[lr_args.architecture](lr_args)
-        model_map = {'lr':lr_model}
-        model_name_map = {'lr':'logistic_regression'}
+        
+        lgb_args = Namespace(architecture='lgb_normal')
+        lgb_args = models.ARCH_CONFIG_REGISTRY[lgb_args.architecture](lgb_args)
+        lgb_model = models.ARCH_MODEL_REGISTRY[lgb_args.architecture](lgb_args)
+        
+        rf_args = Namespace(architecture='rf_normal')
+        rf_args = models.ARCH_CONFIG_REGISTRY[rf_args.architecture](rf_args)
+        rf_model = models.ARCH_MODEL_REGISTRY[rf_args.architecture](rf_args)
+        
+        model_map = {'lr':lr_model,
+                     'lgb':lgb_model,
+                     'rf':rf_model}
+        model_name_map = {'lr':'logistic_regression',
+                          'lgb':'lightgbm',
+                          'rf':'random_forest'}
         
         for m in selected_models:
             model,dataset = m.split('-')
@@ -60,15 +75,14 @@ def main():
             models_ds.append((md,dataset,model_name_map[model]))
 
         task = tasks.setup_task(cfg.task,models=models_ds)
-        
+        y = train[:,0]
         if cfg.setup.pattern == 'evaluate':
-            y = train[:,0]
             for i in range(cfg.task.num_iter):
                 ind_train,ind_valid = train_test_split(range(len(y)),test_size=cfg.task.valid_size,random_state=i*cfg.task.seed)
                 score = task.fit_predict(y,ind_train,ind_valid)
                 logger.info(f'running iter:{i} stack score:{score:.5f}')
-#            
-    
+        else:
+            task.fit_predict(y)
     
 if __name__ == '__main__':
     main()

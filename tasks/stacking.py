@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import pickle
+import pandas as pd
 from tasks.base_task import BaseTask
 from helper.utils import logger,get_dataset,compress_datatype
 from sklearn.model_selection import StratifiedKFold
@@ -10,6 +11,8 @@ from sklearn.linear_model import RidgeCV
 from dataclasses import dataclass,field
 from dataclass.configs import BaseDataClass
 from tasks import register_task
+import warnings
+warnings.filterwarnings(action='ignore')
 
 @dataclass
 class StackingConfig(BaseDataClass):
@@ -67,23 +70,23 @@ class StackedClassifier(BaseTask):
         
         return stack_preds,model_preds
     
-    def _combine_preds(self,X_stack,X_predict,y_train,y_te):
+    def _combine_preds(self,X_stack,X_predict,y_train,y_te=None):
         mean_preds = np.mean(X_predict,axis=1)
-        mean_score = roc_auc_score(y_te,mean_preds)
+        mean_score = roc_auc_score(y_te,mean_preds) if y_te is not None else 0
         stack_preds = None
         
         if self.args.stack:
             self.generalizer.fit(X_stack,y_train)
             stack_preds = self.generalizer.predict(X_predict)
-            stack_score = roc_auc_score(y_te,stack_preds)
+            stack_score = roc_auc_score(y_te,stack_preds) if y_te is not None else 0
         
         return mean_score,stack_score,mean_preds,stack_preds
     
     def fit_predict(self,y,train=None,predict=None):
-        y_train = y[train] if train is not None else train
+        y_train = y[train] if train is not None else y
         if train is not None and predict is None:
             predict = [i for i in range(len(y)) if i not in train]
-        y_te = y[predict]
+        y_te = y[predict] if predict is not None else None
         
         stack_train,stack_predict = [],[]
         best_score = 0
@@ -91,7 +94,7 @@ class StackedClassifier(BaseTask):
         for i,(model,feature_set,model_name) in enumerate(self.models):
             logger.info(f'predicting feature:{feature_set} with {model_name}')
             
-            X_train,X_predict = get_dataset(feature_set,'logistic_regression',train,predict)
+            X_train,X_predict = get_dataset(feature_set,model_name,train,predict)
             
             if self.args.stack:
                 stack_preds,model_preds = self._get_model_cv_preds(model,X_train,X_predict,y_train)
@@ -118,16 +121,20 @@ class StackedClassifier(BaseTask):
                 
                 logger.info('model auc:%.5f,mean auc:%.5f,stack auc:%.5f' % (
                             model_auc,mean_auc,stack_auc))
-            else:
-                logger.info('predicting stacking result for submission')
         
-        stack_train = np.array(stack_train).T[:,featuer_ind]
-        stack_valid = np.array(stack_predict).T[:,featuer_ind]
-        final_mean_score,final_stack_score,_,_ = self._combine_preds(stack_train,
-                                                                     stack_valid,
-                                                                     y_train,
-                                                                     y_te)
-        logger.info(f'final best score:{final_stack_score:.5f}')
+        stack_train = np.array(stack_train).T
+        stack_valid = np.array(stack_predict).T
+        stack_mean,stack_score,mean_preds,stack_preds = self._combine_preds(stack_train,
+                                                                            stack_valid,
+                                                                            y_train,
+                                                                            y_te)
+        logger.info(f'final best score:{stack_score:.5f}')
+        
+        if train is None:
+            stack_preds = pd.DataFrame(stack_preds,columns=['Action'])
+            test = pd.read_csv('data/test.csv')
+            stack_preds['id'] = test.id
+            stack_preds.to_csv(r'submission.csv',index=False)
         
         if self.args.save_data:
             stack_tr = compress_datatype(stack_train)

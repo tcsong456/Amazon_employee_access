@@ -6,7 +6,7 @@ from tasks.base_task import BaseTask
 from dataclass.configs import BaseDataClass
 from tasks import register_task
 from sklearn.preprocessing import StandardScaler
-from helper.utils import save_data,logger
+from helper.utils import save_data,logger,check_var
 from sklearn.base import TransformerMixin
 from scipy import sparse
 
@@ -19,16 +19,18 @@ def process(data,log_transform=False,normalize=False,create_divs=False):
         data = np.array(data)
         
     d = list(data.T)
-    features = [np.array(f) for f in d]
+    feats = [np.array(f) for f in d]
+    features = []
+    features.extend(feats)
     
     if create_divs:
-        b = features[0]
-        features.extend([a / (b + 1) for a in features])
-        features.extend([a * b for a in features])
+        b = feats[0]
+        features.extend([a / (b + 1) for a in feats])
+        features.extend([a * b for a in feats])
     
     if log_transform:
-        features.extend([a**2 for a in features])
-        features.extend([np.log(a + 1) for a in features])
+        features.extend([a**2 for a in feats])
+        features.extend([np.log(a + 1) for a in feats])
     
     features = np.array(features).T
     
@@ -45,21 +47,6 @@ def check_data(files):
     bools = [(f in file_list) for f in files]
     assert np.all(bools)
 
-def check_var(dtr,dte):
-    keep = []
-    num_rows = dtr.shape[0]
-    d = np.vstack([dtr,dte])
-    
-    for col in range(d.shape[1]):
-        var = d[:,col].var()
-        if var > 0:
-            keep.append(col)
-    d = d[:,keep]
-    
-    dtr = d[:num_rows]
-    dte = d[num_rows:]
-    return dtr,dte
-
 def sparcify(train,test):
     X = np.vstack([train,test])
     fitter = OneHotEncoder()
@@ -68,6 +55,12 @@ def sparcify(train,test):
     X_test = fitter.transform(test).astype(np.float16)
     return X_train,X_test
 
+def concat(*args):
+    args = args[0]
+    data = [d for d in args]
+    data = np.hstack(data)
+    return data
+    
 class OneHotEncoder(TransformerMixin):    
     def fit(self,X):
         self.keymap = []
@@ -102,23 +95,24 @@ class BuildDataset(BaseTask):
         self.train = train[:,1:-1]
         self.test = test[:,1:-1]
         self.arch = arch
-        self.mother_path = 'interim_data_sotre/model_features'
-        self.lr_path = os.path.join(self.mother_path,'logisitc_regression')
+        self.mother_path = 'interim_data_store/model_features'
+        self.lr_path = os.path.join(self.mother_path,'logistic_regression')
         if not os.path.exists(self.lr_path):
             os.makedirs(self.lr_path)
         
-        self.DATASETS = ['greedy1remove','greedy2remove','greedy3remove','greedy4remove']
+        self.DATASETS = ['greedy1remove','greedy2remove']
         
     
-    def load_data(self,ds):
-        with open(f'interim_data_store/{ds}.pkl','rb') as f:
+    def load_data(self,ds,suffix=None,convert_to_numpy=True):
+        suffix = suffix if suffix is not None else ''
+        with open(f'interim_data_store/{suffix}{ds}.pkl','rb') as f:
             data = pickle.load(f)
             if len(data) == 2:
                 X_tr,X_te = data
             elif len(data) == 3:
                 X_tr,X_te,_ = data
         
-        if not isinstance(X_tr,np.ndarray):
+        if convert_to_numpy:
             X_tr = np.array(X_tr)
             X_te = np.array(X_te)
         
@@ -137,17 +131,12 @@ class BuildDataset(BaseTask):
         tripple_tr,tripple_te = self.load_data('tripple')
 
         X_tup,X_tup_te = sparcify(tuple_tr,tuple_te)
-        save_data(X_tup,X_tup_te,'lr_tuple','logisitc_regression')
+        save_data(X_tup,X_tup_te,'lr_tuple','logistic_regression')
         
         X_trp,X_trp_te = sparcify(tripple_tr,tripple_te)
-        save_data(X_trp,X_trp_te,'lr_tripple','logisitc_regression')
+        save_data(X_trp,X_trp_te,'lr_tripple','logistic_regression')
         
-        save_data(X_tup,X_tup_te,'lr_tuple_tripple','logisitc_regression',X_trp,X_trp_te)
-        
-        tree_cd_tr = process(treefeats_tr,create_divs=True)
-        tree_cd_te = process(treefeats_te,create_divs=True)
-        tree_cd_tr,tree_cd_te = check_var(tree_cd_tr,tree_cd_te)
-        save_data(tree_cd_tr,tree_cd_te,'tree_div',)
+        save_data(X_tup,X_tup_te,'lr_tuple_tripple','logistic_regression',X_trp,X_trp_te)
         
         tree_log_tr = process(treefeats_tr,log_transform=True)
         tree_log_te = process(treefeats_te,log_transform=True)
@@ -168,12 +157,50 @@ class BuildDataset(BaseTask):
             logger.info(f'creating features with {ds} dataset used')
             X,X_te = self.load_data(ds)
             
-            if 'greedy' in ds:
-                X,X_te = sparcify(X,X_te)
-                save_data(X,X_te,f'lr_gr{i}','logistitc_regression')
-                save_data(X,X_te,f'lr_gr{i}tuple','logistitc_regression',X_tup,X_tup_te)
-                save_data(X,X_te,f'lr_gr{i}tripple','logistitc_regression',X_trp,X_trp_te)
+            X,X_te = sparcify(X,X_te)
+            save_data(X,X_te,f'lr_gr{i}','logistic_regression')
+            save_data(X,X_te,f'lr_gr{i}tuple','logistic_regression',X_tup,X_tup_te)
+            save_data(X,X_te,f'lr_gr{i}tripple','logistic_regression',X_trp,X_trp_te)
             
-                
+            X,X_te = self.load_data(f'lr_gr{i}','model_features/logistic_regression/',convert_to_numpy=False)
+            save_data(X,X_te,f'lr_gr{i}base','logistic_regression',basefeats_tr,basefeats_te)
+            
+            X,X_te = self.load_data(f'lr_gr{i}tuple','model_features/logistic_regression/',convert_to_numpy=False)
+            save_data(X,X_te,f'lr_gr{i}tripple_base','logistic_regression',basefeats_tr,basefeats_te)
+            
+            X,X_te = self.load_data(f'lr_gr{i}tripple','model_features/logistic_regression/',convert_to_numpy=False)
+            save_data(X,X_te,f'lr_gr{i}tuple_base','logistic_regression',basefeats_tr,basefeats_te)
+        
+        base_basic_tr = concat([basefeats_tr,basic_tr])
+        base_basic_te = concat([basefeats_te,basic_te])
+        save_data(base_basic_tr,base_basic_te,'lgb_base_basic','lightgbm')
+        
+        baseextrbs_tr = concat([basefeats_tr,treefeats_tr,extrafeats_tr,basic_tr])
+        baseextrbs_te = concat([basefeats_te,treefeats_te,extrafeats_te,basic_te])
+        save_data(baseextrbs_tr,baseextrbs_te,'lgb_baseextrbs','lightgbm')
+        
+        bsbatrlmelex_tr = concat([bsfeats_tr,basic_tr,tree_log_tr,meta_log_tr,extrafeats_tr])
+        bsbatrlmelex_te = concat([bsfeats_te,basic_te,tree_log_te,meta_log_te,extrafeats_te])
+        save_data(bsbatrlmelex_tr,bsbatrlmelex_te,'lgb_bsbatrlmelex','lightgbm')
+        
+        exbasic_tr = concat([extrafeats_tr,basic_tr])
+        exbasic_te = concat([extrafeats_te,basic_te])
+        save_data(exbasic_tr,exbasic_te,'lgb_exbasic','lightgbm')
+        
+        trbsme_tr = concat([treefeats_tr,basic_tr,metafeats_tr])
+        trbsme_te = concat([treefeats_te,basic_te,metafeats_te])
+        save_data(trbsme_tr,trbsme_te,'lgb_trbsme','lightgbm')
+        
+        base_tr = concat([basefeats_tr])
+        base_te = concat([basefeats_te])
+        save_data(base_tr,base_te,'rf_base','random_forest')
+        
+        babsme_tr = concat([basefeats_tr,basic_tr,metafeats_tr])
+        babsme_te = concat([basefeats_te,basic_te,metafeats_te])
+        save_data(babsme_tr,babsme_te,'rf_babsme','random_forest')
+        
+        trmelba_tr = concat([treefeats_tr,meta_log_tr,basic_tr])
+        trmelba_te = concat([treefeats_te,meta_log_te,basic_te])
+        save_data(trmelba_tr,trmelba_te,'rf_trmelba','random_forest')
 
 #%%

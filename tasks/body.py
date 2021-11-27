@@ -9,7 +9,7 @@ from dataclass.configs import BaseDataClass
 from dataclass.choices import BODY_CHOICES
 from dataclasses import dataclass,field
 from typing import Optional
-from helper.utils import compress_datatype
+from helper.utils import compress_datatype,check_var
 
 @dataclass
 class BodyConfig(BaseDataClass):
@@ -107,6 +107,8 @@ class BuildBody(BaseTask):
         
         feature_train = compress_datatype(feature_train)
         feature_test = compress_datatype(feature_test)
+        
+        feature_train,feature_test = check_var(feature_train,feature_test)
         
         filename = self.args.option
         with open(f'interim_data_store/{filename}_data.pkl','wb') as f:
