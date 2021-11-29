@@ -49,6 +49,7 @@ class StackedClassifier(BaseTask):
         num_rows,num_cols = X_train.shape
         stack_preds = np.zeros(num_rows)
         model_preds = np.zeros(X_predict.shape[0])
+        
         for i,(ind_tr,ind_te) in enumerate(skf.split(range(num_rows),y_train)):
             logger.info(f'running stacking model cv: {i}')
             if sparse.issparse(X_train):
@@ -57,12 +58,12 @@ class StackedClassifier(BaseTask):
             else:
                 xtr = X_train[ind_tr]
                 xte = X_train[ind_te]
-                
+            
             ytr = y_train[ind_tr]
             model.fit(xtr,ytr)
             stack_pred = model.predict(xte)
             stack_preds[ind_te] = stack_pred
-            
+
             model_pred = model.predict(X_predict)
             model_preds += model_pred
             
@@ -95,7 +96,7 @@ class StackedClassifier(BaseTask):
             logger.info(f'predicting feature:{feature_set} with {model_name}')
             
             X_train,X_predict = get_dataset(feature_set,model_name,train,predict)
-            
+
             if self.args.stack:
                 stack_preds,model_preds = self._get_model_cv_preds(model,X_train,X_predict,y_train)
                 stack_train.append(stack_preds)
@@ -154,6 +155,4 @@ class StackedClassifier(BaseTask):
         
         return score
         
-        
-
 #%%

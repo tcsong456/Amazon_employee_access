@@ -28,17 +28,20 @@ def main():
     else:
         train,test = load_data('data')
     
-    orig_dir = 'interim_data_store'
-    pivot_dict = {}
-    pivot_keys = ['pivottable','pivottable_test','pivottable_train']
-    for file in os.listdir(orig_dir):
-        if 'pivottable' in file:
-            dc = pickle.load(open(os.path.join(orig_dir,file),'rb'))
-            pivot_dict[file[:file.find('.pkl')]] = dc
-    check_bool = [(k in pivot_keys) for k in pivot_dict]
-    assert np.all(check_bool),f'pivot dictionary must contain all keys in {pivot_keys}'
+    if not os.path.exists('interim_data_store'):
+        os.makedirs('interim_data_store')
     
     if cfg.setup.mode == 'build_task':
+        orig_dir = 'interim_data_store'
+        pivot_dict = {}
+        pivot_keys = ['pivottable','pivottable_test','pivottable_train']
+        for file in os.listdir(orig_dir):
+            if 'pivottable' in file:
+                dc = pickle.load(open(os.path.join(orig_dir,file),'rb'))
+                pivot_dict[file[:file.find('.pkl')]] = dc
+        check_bool = [(k in pivot_keys) for k in pivot_dict]
+        assert np.all(check_bool),f'pivot dictionary must contain all keys in {pivot_keys}'
+    
         model = models.build_model(cfg.model)
         task = tasks.setup_task(cfg.task,train=train,test=test,model=model,arch=cfg.setup.arch,
                                 **pivot_dict)
@@ -78,7 +81,7 @@ def main():
         y = train[:,0]
         if cfg.setup.pattern == 'evaluate':
             for i in range(cfg.task.num_iter):
-                ind_train,ind_valid = train_test_split(range(len(y)),test_size=cfg.task.valid_size,random_state=i*cfg.task.seed)
+                ind_train,ind_valid = train_test_split(range(len(y)),test_size=cfg.task.valid_size,random_state=(i+1)*cfg.task.seed)
                 score = task.fit_predict(y,ind_train,ind_valid)
                 logger.info(f'running iter:{i} stack score:{score:.5f}')
         else:

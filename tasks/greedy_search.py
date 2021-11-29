@@ -1,6 +1,6 @@
+import os
 import numpy as np
 import pickle
-import os
 from itertools import combinations
 from dataclasses import dataclass,field
 from dataclass.configs import BaseDataClass
@@ -74,8 +74,6 @@ class GreedySearch(BaseTask):
         X_train = X_tr[:,good_feature_list]
         X_test = X_te[:,good_feature_list]
         suffix = str(i + 1)
-        if not os.path.exists('interim_data_store'):
-            os.mkdir('interim_data_store')
         
         X_train = compress_datatype(X_train)
         X_test = compress_datatype(X_test)
@@ -105,6 +103,14 @@ class GreedySearch(BaseTask):
         
         num_features = X_tr.shape[1]
         Xts = [convert_to_sparsematrix(X_tr[:,[i]]) for i in range(num_features)]
+        
+        if os.path.exists('greedy_helper.pkl'):
+            with open('greedy_helper.pkl','rb') as f:
+                greedy_index = pickle.load(f)
+                gr1_ind,gr2_ind = greedy_index
+            self.save_data(X_tr,X_te,gr1_ind,0)
+            self.save_data(X_tr,X_te,gr2_ind,1)
+            return X_tr
         
         for i in range(self.args.num_of_tries):
             score_list = []

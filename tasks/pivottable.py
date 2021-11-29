@@ -26,10 +26,7 @@ class PivotTable(BaseTask):
                  **kwargs):
         self.args = args
         self.train = train
-        self.test = test
-        if not os.path.exists('interim_data_store'):
-            os.mkdir('interim_data_store')
-        
+        self.test = test        
         self.COLNAMES = ["resource", "manager", "role1", "role2", "department",
                          "title", "family_desc", "family"]
     

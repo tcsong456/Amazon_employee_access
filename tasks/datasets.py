@@ -51,8 +51,8 @@ def sparcify(train,test):
     X = np.vstack([train,test])
     fitter = OneHotEncoder()
     fitter.fit(X)
-    X_train = fitter.transform(train).astype(np.float16)
-    X_test = fitter.transform(test).astype(np.float16)
+    X_train = fitter.transform(train)
+    X_test = fitter.transform(test)
     return X_train,X_test
 
 def concat(*args):
@@ -136,8 +136,6 @@ class BuildDataset(BaseTask):
         X_trp,X_trp_te = sparcify(tripple_tr,tripple_te)
         save_data(X_trp,X_trp_te,'lr_tripple','logistic_regression')
         
-        save_data(X_tup,X_tup_te,'lr_tuple_tripple','logistic_regression',X_trp,X_trp_te)
-        
         tree_log_tr = process(treefeats_tr,log_transform=True)
         tree_log_te = process(treefeats_te,log_transform=True)
         tree_log_tr,tree_log_te = check_var(tree_log_tr,tree_log_te)
@@ -204,3 +202,7 @@ class BuildDataset(BaseTask):
         save_data(trmelba_tr,trmelba_te,'rf_trmelba','random_forest')
 
 #%%
+
+
+
+

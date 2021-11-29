@@ -57,9 +57,6 @@ class Score(BaseTask):
         
         assert self.arch in ABBRV
         self.key_word = ABBRV[self.arch]
-        
-        if not os.path.exists('interim_data_store/stats'):
-            os.makedirs('interim_data_store/stats')
     
     def create_features(self):
         logger.info(f'testing features with {self.arch}')

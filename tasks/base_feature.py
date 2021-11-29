@@ -31,8 +31,6 @@ class BaseFeature(BaseTask):
     
     def save_data(self,Xt,Xte):
         f_path = 'interim_data_store'
-        if not os.path.exists(f_path):
-            os.mkdir(f_path)
         
         Xt = compress_datatype(Xt)
         Xte = compress_datatype(Xte)

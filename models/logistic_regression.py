@@ -15,6 +15,7 @@ class LR:
         parser.add_argument('--penalty',
                             help='Specify the norm of the penalty')
         parser.add_argument('--c',
+                            type=float,
                             help='Inverse of regularization strength; must be a positive float. Like in support vector machines, smaller values \
                             specify stronger regularization')
         parser.add_argument('--max_iter',

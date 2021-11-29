@@ -1,6 +1,5 @@
 import math
 import pickle
-import os
 import numpy as np
 from helper.utils import logger
 from tasks import register_task
@@ -46,10 +45,7 @@ class BuildBody(BaseTask):
         self.dictionary_train = dictionary_train
         self.dictionary_test = dictionary_test
         self.dictionary = dictionary
-        
-        if not os.path.exists('interim_data_store'):
-            os.mkdir('interim_data_store')
-    
+
     def gen_feature(self,data,feature_list):
         features = []
         for row in data:
