@@ -1,14 +1,15 @@
-FROM ubuntu
+FROM continuumio/miniconda:4.6.14
 
-RUN apt-get install -y \
-    unzip
-
-FROM python:3.9
-
-WORKDIR /project
-
-COPY requirements.txt requirements.txt
-RUN pip install -r requirements.txt
-
+WORKDIR amazon
 COPY . .
-RUN /bin/bash -c "echo pwd"
+
+RUN apt-get update && apt-get install -y \
+    unzip 
+
+RUN cd /root/ && mkdir .kaggle && cd /amazon
+RUN cp kaggle.json /root/.kaggle/kaggle.json
+RUN conda env create -f yaml/amazon-env-dependencies.yaml
+
+ARG init_mode=evaluate
+ENV mode=$init_mode
+ENTRYPOINT ["/bin/bash","-c","source activate amazon-access-env && bash main.sh $mode"]

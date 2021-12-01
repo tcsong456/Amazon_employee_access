@@ -1,0 +1,15 @@
+name: amazon-access-env
+dependencies:
+  - python=3.7.*
+  - pip
+  
+  - pip:
+    - kaggle
+    - numpy
+    - pandas
+    - hydra-core
+    - scipy
+    - lightgbm
+    - logzero
+    - dataclasses
+    - omegaconf
