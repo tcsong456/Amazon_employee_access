@@ -190,17 +190,3 @@ def convert_namespace_to_omegaconf(args):
 
 
 #%%
-'''
-FROM continuumio/miniconda:4.6.14
-
-WORKDIR amazon
-COPY . .
-
-RUN apt-get update && apt-get install -y \
-    unzip 
-
-RUN cd /root/ && mkdir .kaggle && cd /amazon
-RUN cp kaggle.json /home/.kaggle/kaggle.json
-RUN conda env create -f yaml/amazon-env-dependencies.yaml
-ENTRYPOINT ["/bin/bash","-c","source activate amazon-access-env && bash main.sh evaluate"]
-'''
