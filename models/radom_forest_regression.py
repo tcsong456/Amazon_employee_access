@@ -51,5 +51,5 @@ def rf_run(args):
     args.max_samples = getattr(args,'max_samples',0.8)
     args.max_features = getattr(args,'max_features',0.1)
     args.n_jobs = getattr(args,'n_jobs',6)
-    args.bootstrap = getattr(args,'bootstrap',False)
+    args.bootstrap = getattr(args,'bootstrap',True)
     return args

@@ -134,8 +134,11 @@ class StackedClassifier(BaseTask):
         if train is None:
             stack_preds = pd.DataFrame(stack_preds,columns=['Action'])
             test = pd.read_csv('data/test.csv')
+            if 'id' not in test.columns:
+                test['id'] = np.arange(1,test.shape[0]+1)
             stack_preds['id'] = test.id
             stack_preds.to_csv(r'submission.csv',index=False)
+            logger.info('prediction results saved as submission.csv')
         
         if self.args.save_data:
             stack_tr = compress_datatype(stack_train)

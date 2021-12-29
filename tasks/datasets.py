@@ -93,7 +93,7 @@ class BuildDataset(BaseTask):
                  **kwargs):
         self.args = args
         self.train = train[:,1:-1]
-        self.test = test[:,1:-1]
+        self.test = test[:,:-1]
         self.arch = arch
         self.mother_path = 'interim_data_store/model_features'
         self.lr_path = os.path.join(self.mother_path,'logistic_regression')
@@ -202,7 +202,9 @@ class BuildDataset(BaseTask):
         save_data(trmelba_tr,trmelba_te,'rf_trmelba','random_forest')
 
 #%%
-
+#import pickle
+#with open('interim_data_store/tuple.pkl','rb') as f:
+#    data = pickle.load(f)
 
 
 

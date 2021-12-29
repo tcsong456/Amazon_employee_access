@@ -13,3 +13,4 @@ dependencies:
     - logzero
     - dataclasses
     - omegaconf
+    - mysql-connector-python

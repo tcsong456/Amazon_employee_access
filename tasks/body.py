@@ -33,7 +33,7 @@ class BuildBody(BaseTask):
                  **kwargs):
         self.args = args
         self.train = train[:,1:-1]
-        self.test = test[:,1:-1]
+        self.test = test[:,:-1]
         self.arch = arch
         self.columns = ["resource", "manager", "role1", "role2", "department",
                         "title", "family_desc", "family"]

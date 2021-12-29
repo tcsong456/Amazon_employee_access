@@ -11,6 +11,38 @@ from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
 from helper.utils import logger,compress_datatype
 
+def get_connector(password,
+                  database='',
+                  user='root',
+                  host='localhost'):
+    import mysql.connector as mysql
+    db = mysql.connect(host=host,
+                       user=user,
+                       password=password,
+                       database=database,
+                       auth_plugin='mysql_native_password')
+    cursor = db.cursor()
+    return cursor,db
+
+def comb_data_sql(data,num,cursor):
+    hash_data = []
+    columns = np.array(data.columns.tolist())
+    comb = combinations(range(data.shape[1]),num)
+    
+    init_char = ''
+    for i in range(num):
+        init_char += '%s,' if i < num-1 else '%s'
+    pos_char = init_char
+    
+    for c in comb:
+        c = list(c)
+        cols = columns[c]
+        cursor.execute('select %s from amazon_all' % pos_char % tuple(cols))
+        d = np.array(cursor.fetchall())
+        hash_data.append([hash(tuple(r)) for r in d])
+    hash_data = np.array(hash_data).T
+    return hash_data
+
 def comb_data(data,num):
     rows,cols = data.shape
     combs = combinations(range(cols),num)
@@ -55,21 +87,15 @@ class GreedySearchConfig(BaseDataClass):
     instant_remove: bool = field(default=False,metadata={'help':'if item is removed instantly during search'})
     trail_feat_len: int = field(default=-1,metadata={'help':'fast way to test code feasibility'})
 
-@register_task('greedy_search',dataclass=GreedySearchConfig)
-class GreedySearch(BaseTask):
+class BaseGreedySearch(BaseTask):
     def __init__(self,
                  args,
                  train,
-                 test,
-                 model,
-                 arch,
-                 **kwargs):
+                 test):
         self.args = args
         self.train = train
         self.test = test
-        self.model = model
-        self.arch = arch
-        
+    
     def save_data(self,X_tr,X_te,good_feature_list,i):
         X_train = X_tr[:,good_feature_list]
         X_test = X_te[:,good_feature_list]
@@ -83,24 +109,7 @@ class GreedySearch(BaseTask):
             pickle.dump((X_train,X_test,good_feature_list),f)
             logger.info(f"successfully saved greedy{suffix}{str_suffix}")
     
-    def create_features(self):
-        all_data = np.vstack([self.train[:,1:-1],self.test[:,1:-1]])
-        train_rows = self.train.shape[0]
-        
-        double_hash = comb_data(all_data,2)
-        tripple_hash = comb_data(all_data,3)
-        
-        y = self.train[:,0]
-        X = self.train[:,1:-1]
-        X_double_tr = double_hash[:train_rows]
-        X_tripple_tr = tripple_hash[:train_rows]
-        X_tr = np.hstack([X,X_double_tr,X_tripple_tr])
-        
-        Xt = self.test[:,1:-1]
-        X_double_te = double_hash[train_rows:]
-        X_tripple_te = tripple_hash[train_rows:]
-        X_te = np.hstack([Xt,X_double_te,X_tripple_te])
-        
+    def greedy_search(self,X_tr,X_te,y):
         num_features = X_tr.shape[1]
         Xts = [convert_to_sparsematrix(X_tr[:,[i]]) for i in range(num_features)]
         
@@ -143,9 +152,80 @@ class GreedySearch(BaseTask):
             logger.info(f'arch:{self.arch} round:{i} best features:{good_feature_list}')     
                 
         return Xts
+
+@register_task('greedy_search',dataclass=GreedySearchConfig)
+class GreedySearch(BaseGreedySearch):
+    def __init__(self,
+                 args,
+                 train,
+                 test,
+                 model,
+                 arch,
+                 **kwargs):
+        super().__init__(args,train,test)
+        self.model = model
+        self.arch = arch
+    
+    def create_features(self):
+        y = self.train[:,0]
+        all_data = np.vstack([self.train[:,1:-1],self.test[:,:-1]])
+        train_rows = self.train.shape[0]
+        X = self.train[:,1:-1]
+        Xt = self.test[:,:-1]
         
+        double_hash = comb_data(all_data,2)
+        tripple_hash = comb_data(all_data,3)
+        
+        X_double_tr = double_hash[:train_rows]
+        X_tripple_tr = tripple_hash[:train_rows]
+        X_tr = np.hstack([X,X_double_tr,X_tripple_tr])
+        
+        X_double_te = double_hash[train_rows:]
+        X_tripple_te = tripple_hash[train_rows:]
+        X_te = np.hstack([Xt,X_double_te,X_tripple_te])
+        
+        X = super().greedy_search(X_tr,X_te,y)
+        
+        return X
+
+@register_task('greedy_search_sql',dataclass=GreedySearchConfig)
+class GreedySearchSql(BaseGreedySearch):
+    def __init__(self,
+                 args,
+                 train,
+                 test,
+                 model,
+                 arch,
+                 **kwargs):
+        super().__init__(args,train,test)
+        self.model = model
+        self.arch = arch
     
+    def create_features(self):
+        import pandas as pd
+        
+        all_data = pd.concat([self.train.iloc[:,1:-1],self.test.iloc[:,:-1]])
+        train_rows = self.train.shape[0]
+        y = self.train.iloc[:,0]
+        X = self.train.iloc[:,1:-1]
+        Xt = self.test.iloc[:,:-1]
+        
+        cursor,_ = get_connector(password='111',
+                                 host='mysqldb',
+                                 database='kaggle')
+        double_hash = comb_data_sql(all_data,2,cursor)
+        tripple_hash = comb_data_sql(all_data,3,cursor)
+        
+        X_double_tr = double_hash[:train_rows]
+        X_tripple_tr = tripple_hash[:train_rows]
+        X_tr = np.hstack([X,X_double_tr,X_tripple_tr])
+        
+        X_double_te = double_hash[train_rows:]
+        X_tripple_te = tripple_hash[train_rows:]
+        X_te = np.hstack([Xt,X_double_te,X_tripple_te])
+        
+        X = super().greedy_search(X_tr,X_te,y)
+        
+        return X
+
 #%%
-
-
-    

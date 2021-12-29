@@ -32,13 +32,13 @@ class PivotTable(BaseTask):
     
     def create_features(self):
         if  self.args.use_split == 'all':
-            X = np.vstack([self.train[:,1:-1],self.test[:,1:-1]])
+            X = np.vstack([self.train[:,1:-1],self.test[:,:-1]])
             filename = 'pivottable'
         elif self.args.use_split == 'train':
             X = self.train[:,1:-1]
             filename = 'pivottable_train'
         elif self.args.use_split == 'test':
-            X = self.test[:,1:-1]
+            X = self.test[:,:-1]
             filename = 'pivottable_test'
         
         dictionary = []
@@ -74,4 +74,5 @@ class PivotTable(BaseTask):
         return dictionary
 
 #%%
+
               

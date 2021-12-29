@@ -74,7 +74,7 @@ class BuildTupleTripple(BaseTask):
                  **kwargs):
         self.args = args
         self.train = train[:,1:-1]
-        self.test = test[:,1:-1]
+        self.test = test[:,:-1]
     
     def create_features(self):
         if self.args.option == 'tuple':
